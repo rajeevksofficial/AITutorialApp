@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">AI Tutorial</string>
+    <string name="subtitle">Explore Trending AI Learning Topics &amp; Web Docs</string>
+    <string name="search_hint">Search topics (e.g. RAG, Transformers, Agents)...</string>
+    <string name="filter_all">All</string>
+    <string name="filter_gen_ai">Generative AI</string>
+    <string name="filter_agents">AI Agents</string>
+    <string name="filter_deep_learning">Deep Learning</string>
+    <string name="filter_vision">Vision &amp; Multimodal</string>
+    <string name="filter_safety">Safety &amp; Alignment</string>
+    <string name="label_trending">Trending AI Topics</string>
+    <string name="label_source_wiki">Wikipedia Source</string>
+    <string name="btn_open_web">Open Full Web Article</string>
+    <string name="btn_mark_complete">Mark as Studied</string>
+    <string name="btn_completed">Completed</string>
+    <string name="study_progress_label">AI Mastery Progress</string>
+</resources>

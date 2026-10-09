@@ -1,0 +1,67 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Brain / Neural Silhouette -->
+    <path
+        android:fillColor="#1E163B"
+        android:pathData="M54,24 C42,24 32,32 32,44 C32,50 35,55 38,58 C36,63 38,70 42,74 C46,78 52,80 54,82 C56,80 62,78 66,74 C70,70 72,63 70,58 C73,55 76,50 76,44 C76,32 66,24 54,24 Z" />
+
+    <!-- Circuit Synapse Lines -->
+    <path
+        android:strokeColor="#8B5CF6"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M54,34 V48 M54,48 L42,42 M54,48 L66,42 M54,48 L44,60 M54,48 L64,60 M42,42 L38,52 M66,42 L70,52 M44,60 L54,72 M64,60 L54,72" />
+
+    <!-- Neural Network Nodes (Circles) -->
+    <!-- Center Core Node -->
+    <path
+        android:fillColor="#06B6D4"
+        android:pathData="M54,48m-4.5,0a4.5,4.5 0 1,0 9,0a4.5,4.5 0 1,0 -9,0" />
+
+    <!-- Top Node -->
+    <path
+        android:fillColor="#EC4899"
+        android:pathData="M54,34m-3,0a3,3 0 1,0 6,0a3,3 0 1,0 -6,0" />
+
+    <!-- Left Upper Node -->
+    <path
+        android:fillColor="#A78BFA"
+        android:pathData="M42,42m-3,0a3,3 0 1,0 6,0a3,3 0 1,0 -6,0" />
+
+    <!-- Right Upper Node -->
+    <path
+        android:fillColor="#A78BFA"
+        android:pathData="M66,42m-3,0a3,3 0 1,0 6,0a3,3 0 1,0 -6,0" />
+
+    <!-- Left Outer Node -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M38,52m-2.5,0a2.5,2.5 0 1,0 5,0a2.5,2.5 0 1,0 -5,0" />
+
+    <!-- Right Outer Node -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M70,52m-2.5,0a2.5,2.5 0 1,0 5,0a2.5,2.5 0 1,0 -5,0" />
+
+    <!-- Lower Nodes -->
+    <path
+        android:fillColor="#A78BFA"
+        android:pathData="M44,60m-3,0a3,3 0 1,0 6,0a3,3 0 1,0 -6,0" />
+    <path
+        android:fillColor="#A78BFA"
+        android:pathData="M64,60m-3,0a3,3 0 1,0 6,0a3,3 0 1,0 -6,0" />
+
+    <!-- Bottom Node -->
+    <path
+        android:fillColor="#06B6D4"
+        android:pathData="M54,72m-3.5,0a3.5,3.5 0 1,0 7,0a3.5,3.5 0 1,0 -7,0" />
+
+    <!-- AI Sparkle / Star top right -->
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M78,28 L79.5,32.5 L84,34 L79.5,35.5 L78,40 L76.5,35.5 L72,34 L76.5,32.5 Z" />
+</vector>
