@@ -9,7 +9,7 @@ import kotlin.concurrent.thread
 
 object AiTopicRepository {
 
-    private val topics = mutableListOf(
+    private val foundationTopics = listOf(
         AiTopic(
             id = "rag",
             title = "Retrieval-Augmented Generation (RAG)",
@@ -312,36 +312,104 @@ object AiTopicRepository {
         )
     )
 
-    fun getAllTopics(): List<AiTopic> = topics
+    private val liveFeedTopics = mutableListOf<AiTopic>()
+    private val allTopics = mutableListOf<AiTopic>().apply {
+        addAll(foundationTopics)
+    }
 
-    fun getTopicById(id: String): AiTopic? = topics.find { it.id == id }
+    @Volatile
+    private var isFetching = false
 
-    fun filterTopics(category: String?, searchQuery: String?): List<AiTopic> {
-        return topics.filter { topic ->
-            val matchesCategory = category == null || category == "All" || topic.category.equals(category, ignoreCase = true)
+    /**
+     * Fetches the latest live AI feeds from external sources (ArXiv, TechCrunch, Hugging Face, etc.)
+     * and updates trending topics dynamically.
+     */
+    fun fetchTrendingFeeds(onComplete: ((Boolean, Int) -> Unit)? = null) {
+        if (isFetching) {
+            onComplete?.invoke(false, liveFeedTopics.size)
+            return
+        }
+        isFetching = true
+        AiFeedService.fetchTrendingFeeds { fetchedTopics, success ->
+            isFetching = false
+            if (success && fetchedTopics.isNotEmpty()) {
+                synchronized(this) {
+                    val bookmarkedIds = allTopics.filter { it.isBookmarked }.map { it.id }.toSet()
+                    val completedIds = allTopics.filter { it.isCompleted }.map { it.id }.toSet()
+
+                    liveFeedTopics.clear()
+                    liveFeedTopics.addAll(fetchedTopics)
+
+                    allTopics.clear()
+                    // Dynamic trending feeds appear right at the top!
+                    allTopics.addAll(liveFeedTopics)
+
+                    // Merge curriculum foundation topics
+                    for (foundation in foundationTopics) {
+                        if (allTopics.none { it.id == foundation.id || it.title.equals(foundation.title, ignoreCase = true) }) {
+                            allTopics.add(foundation)
+                        }
+                    }
+
+                    // Restore state
+                    for (topic in allTopics) {
+                        if (bookmarkedIds.contains(topic.id)) topic.isBookmarked = true
+                        if (completedIds.contains(topic.id)) topic.isCompleted = true
+                    }
+                }
+            }
+            onComplete?.invoke(success, liveFeedTopics.size)
+        }
+    }
+
+    fun getAllTopics(): List<AiTopic> = synchronized(this) { allTopics.toList() }
+
+    fun getFoundationTopics(): List<AiTopic> = foundationTopics
+
+    fun getLiveTopics(): List<AiTopic> = synchronized(this) { liveFeedTopics.toList() }
+
+    fun isLiveFeedLoaded(): Boolean = synchronized(this) { liveFeedTopics.isNotEmpty() }
+
+    fun getTrendingSpotlight(): AiTopic? = synchronized(this) {
+        liveFeedTopics.firstOrNull() ?: allTopics.find { it.id == "rag" } ?: allTopics.firstOrNull()
+    }
+
+    fun getTopicById(id: String): AiTopic? = synchronized(this) {
+        allTopics.find { it.id == id }
+    }
+
+    fun filterTopics(category: String?, searchQuery: String?): List<AiTopic> = synchronized(this) {
+        allTopics.filter { topic ->
+            val matchesCategory = when {
+                category == null || category == "All" -> true
+                category.equals("Live Feeds", ignoreCase = true) || category.equals("Trending Feeds", ignoreCase = true) -> topic.isLiveFeed
+                else -> topic.category.equals(category, ignoreCase = true)
+            }
             val matchesSearch = searchQuery.isNullOrBlank() ||
                     topic.title.contains(searchQuery, ignoreCase = true) ||
                     topic.shortSummary.contains(searchQuery, ignoreCase = true) ||
-                    topic.category.contains(searchQuery, ignoreCase = true)
+                    topic.category.contains(searchQuery, ignoreCase = true) ||
+                    topic.sourceName.contains(searchQuery, ignoreCase = true) ||
+                    topic.feedTag.contains(searchQuery, ignoreCase = true)
             matchesCategory && matchesSearch
         }
     }
 
-    fun toggleBookmark(id: String): Boolean {
+    fun toggleBookmark(id: String): Boolean = synchronized(this) {
         val topic = getTopicById(id) ?: return false
         topic.isBookmarked = !topic.isBookmarked
-        return topic.isBookmarked
+        topic.isBookmarked
     }
 
-    fun toggleCompleted(id: String): Boolean {
+    fun toggleCompleted(id: String): Boolean = synchronized(this) {
         val topic = getTopicById(id) ?: return false
         topic.isCompleted = !topic.isCompleted
-        return topic.isCompleted
+        topic.isCompleted
     }
 
-    fun getProgress(): Pair<Int, Int> {
-        val completed = topics.count { it.isCompleted }
-        return Pair(completed, topics.size)
+    fun getProgress(): Pair<Int, Int> = synchronized(this) {
+        val completed = allTopics.count { it.isCompleted }
+        Pair(completed, allTopics.size)
     }
 
     /**
@@ -366,7 +434,7 @@ object AiTopicRepository {
                     val json = JSONObject(response)
                     val extract = if (json.has("extract")) json.getString("extract") else null
 
-                    val topic = topics.find { it.wikiSlug == wikiSlug }
+                    val topic = synchronized(this) { allTopics.find { it.wikiSlug == wikiSlug } }
                     if (extract != null && topic != null) {
                         topic.liveWikiExtract = extract
                     }

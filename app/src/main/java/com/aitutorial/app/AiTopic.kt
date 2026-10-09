@@ -13,5 +13,9 @@ data class AiTopic(
     val webUrl: String,
     var liveWikiExtract: String? = null,
     var isBookmarked: Boolean = false,
-    var isCompleted: Boolean = false
+    var isCompleted: Boolean = false,
+    val sourceName: String = "Wikipedia & Web Docs",
+    val isLiveFeed: Boolean = false,
+    val feedTag: String = "Curriculum",
+    val publishedTime: Long = 0L
 )

@@ -1,11 +1,15 @@
 package com.aitutorial.app
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
+import android.view.animation.Animation
+import android.view.animation.RotateAnimation
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -29,12 +33,17 @@ class MainActivity : AppCompatActivity() {
         setupCategoryChips()
         setupFeaturedCard()
         setupBookmarkFilter()
+        setupSyncButton()
         updateTopicsList()
+
+        // Automatically fetch live AI feeds in background on launch
+        syncTrendingFeeds(isUserInitiated = false)
     }
 
     override fun onResume() {
         super.onResume()
         updateTopicsList()
+        setupFeaturedCard()
     }
 
     private fun setupRecyclerView() {
@@ -71,6 +80,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupCategoryChips() {
         val chipMap = mapOf(
             binding.chipAll to "All",
+            binding.chipLiveFeeds to "Live Feeds",
             binding.chipGenAi to "Generative AI",
             binding.chipAgents to "AI Agents",
             binding.chipDeepLearning to "Deep Learning",
@@ -105,10 +115,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupFeaturedCard() {
-        val featuredTopic = AiTopicRepository.getTopicById("rag") ?: AiTopicRepository.getAllTopics().firstOrNull()
+        val featuredTopic = AiTopicRepository.getTrendingSpotlight()
         if (featuredTopic != null) {
             binding.tvHeroTitle.text = featuredTopic.title
             binding.tvHeroSummary.text = featuredTopic.shortSummary
+
+            if (featuredTopic.isLiveFeed) {
+                binding.tvHeroBadge.text = "🔥 LIVE TRENDING SPOTLIGHT"
+                binding.tvHeroBadge.setTextColor(Color.parseColor("#F43F5E"))
+                binding.tvHeroSource.visibility = View.VISIBLE
+                binding.tvHeroSource.text = "Source: ${featuredTopic.sourceName} • ${featuredTopic.category}"
+            } else {
+                binding.tvHeroBadge.text = "TOP TRENDING SPOTLIGHT"
+                binding.tvHeroBadge.setTextColor(Color.parseColor("#FBBF24"))
+                binding.tvHeroSource.visibility = View.GONE
+            }
+
             binding.btnHeroExplore.setOnClickListener {
                 val intent = Intent(this, TopicDetailActivity::class.java).apply {
                     putExtra(TopicDetailActivity.EXTRA_TOPIC_ID, featuredTopic.id)
@@ -127,6 +149,47 @@ class MainActivity : AppCompatActivity() {
                 binding.btnFilterBookmarked.setImageResource(R.drawable.ic_bookmark)
             }
             updateTopicsList()
+        }
+    }
+
+    private fun setupSyncButton() {
+        binding.btnRefreshFeeds.setOnClickListener {
+            syncTrendingFeeds(isUserInitiated = true)
+        }
+    }
+
+    private fun syncTrendingFeeds(isUserInitiated: Boolean) {
+        if (isUserInitiated) {
+            val rotate = RotateAnimation(
+                0f, 360f,
+                Animation.RELATIVE_TO_SELF, 0.5f,
+                Animation.RELATIVE_TO_SELF, 0.5f
+            ).apply {
+                duration = 600
+                repeatCount = 1
+            }
+            binding.btnRefreshFeeds.startAnimation(rotate)
+            Toast.makeText(this, "Fetching latest feeds from ArXiv, TechCrunch, Hugging Face...", Toast.LENGTH_SHORT).show()
+        }
+
+        binding.tvSubtitle.text = "Syncing live feeds from ArXiv, TechCrunch & HF..."
+
+        AiTopicRepository.fetchTrendingFeeds { success, count ->
+            runOnUiThread {
+                if (success && count > 0) {
+                    binding.tvSubtitle.text = "● Live AI Feeds: Up to date ($count stories)"
+                    setupFeaturedCard()
+                    updateTopicsList()
+                    if (isUserInitiated) {
+                        Toast.makeText(this@MainActivity, "Updated with $count live trending AI topics!", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    binding.tvSubtitle.text = "Interactive Lessons & AI Documentation"
+                    if (isUserInitiated) {
+                        Toast.makeText(this@MainActivity, "Feeds already up to date", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
         }
     }
 
@@ -149,10 +212,10 @@ class MainActivity : AppCompatActivity() {
             binding.rvTopics.visibility = View.VISIBLE
         }
 
-        binding.tvSectionHeader.text = if (isBookmarkFilterActive) {
-            "Bookmarked Topics (${filtered.size})"
-        } else {
-            "Trending AI Topics (${filtered.size})"
+        binding.tvSectionHeader.text = when {
+            isBookmarkFilterActive -> "Bookmarked Topics (${filtered.size})"
+            selectedCategory == "Live Feeds" -> "Latest AI Feeds (${filtered.size})"
+            else -> "Trending AI Topics (${filtered.size})"
         }
 
         updateProgressUI()

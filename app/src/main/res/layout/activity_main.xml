@@ -44,12 +44,24 @@
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tvSubtitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/subtitle"
                     android:textColor="@color/text_muted"
                     android:textSize="11sp" />
             </LinearLayout>
+
+            <!-- Sync / Refresh Feeds button -->
+            <ImageView
+                android:id="@+id/btnRefreshFeeds"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_card"
+                android:contentDescription="Sync Feeds"
+                android:padding="8dp"
+                android:src="@drawable/ic_sparkles" />
 
             <!-- Bookmarked filter badge -->
             <ImageView
@@ -162,6 +174,21 @@
                     android:paddingBottom="6dp"
                     android:text="@string/filter_all"
                     android:textColor="@color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/chipLiveFeeds"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_chip_unselected"
+                    android:paddingStart="14dp"
+                    android:paddingTop="6dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="6dp"
+                    android:text="🔥 Live Feeds"
+                    android:textColor="@color/text_secondary"
                     android:textSize="12sp"
                     android:textStyle="bold" />
 
@@ -280,6 +307,7 @@
                         android:src="@drawable/ic_sparkles" />
 
                     <TextView
+                        android:id="@+id/tvHeroBadge"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
@@ -309,6 +337,18 @@
                     android:text="The most popular AI pattern for grounding LLMs with real-time enterprise documents &amp; vector databases."
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/tvHeroSource"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Source: ArXiv AI Research"
+                    android:textColor="#06B6D4"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
 
                 <Button
                     android:id="@+id/btnHeroExplore"

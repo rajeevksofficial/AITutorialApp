@@ -59,6 +59,29 @@ class AiTopicAdapter(
             // Completed Status Icon
             binding.ivCompletedStatus.visibility = if (topic.isCompleted) View.VISIBLE else View.GONE
 
+            // Live Feed Indicator
+            if (topic.isLiveFeed) {
+                binding.tvLiveBadge.visibility = View.VISIBLE
+                binding.tvLiveBadge.text = "● LIVE ${topic.feedTag.uppercase()}"
+                binding.tvTopicSource.text = topic.sourceName
+                binding.ivTopicSourceIcon.setImageResource(R.drawable.ic_sparkles)
+
+                val sourceColor = when {
+                    topic.sourceName.contains("ArXiv") -> Color.parseColor("#F43F5E")
+                    topic.sourceName.contains("TechCrunch") -> Color.parseColor("#10B981")
+                    topic.sourceName.contains("Hugging Face") -> Color.parseColor("#F59E0B")
+                    topic.sourceName.contains("Google") -> Color.parseColor("#3B82F6")
+                    topic.sourceName.contains("Hacker News") -> Color.parseColor("#FB923C")
+                    else -> Color.parseColor("#06B6D4")
+                }
+                binding.tvTopicSource.setTextColor(sourceColor)
+            } else {
+                binding.tvLiveBadge.visibility = View.GONE
+                binding.tvTopicSource.text = topic.sourceName
+                binding.tvTopicSource.setTextColor(Color.parseColor("#818CF8"))
+                binding.ivTopicSourceIcon.setImageResource(R.drawable.ic_web)
+            }
+
             // Bookmark Status Icon
             if (topic.isBookmarked) {
                 binding.btnBookmark.setImageResource(R.drawable.ic_bookmark_filled)

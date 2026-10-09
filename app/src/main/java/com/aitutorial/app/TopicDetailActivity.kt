@@ -57,6 +57,16 @@ class TopicDetailActivity : AppCompatActivity() {
             "advanced" -> binding.tvDetailDifficulty.setTextColor(Color.parseColor("#EF4444"))
         }
 
+        // Live Feed Banner
+        if (topic.isLiveFeed) {
+            binding.tvDetailLiveBanner.visibility = View.VISIBLE
+            binding.tvDetailLiveBanner.text = "● LIVE FEED: ${topic.sourceName.uppercase()}"
+            binding.btnOpenFullWeb.text = "Open Original Paper / Publication →"
+        } else {
+            binding.tvDetailLiveBanner.visibility = View.GONE
+            binding.btnOpenFullWeb.text = getString(R.string.btn_open_web)
+        }
+
         updateActionIcons()
 
         // Populate Core Concepts List
