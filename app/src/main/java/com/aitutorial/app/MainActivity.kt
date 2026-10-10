@@ -1,8 +1,9 @@
 package com.aitutorial.app
 
 import android.content.Intent
-import android.graphics.Color
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
@@ -12,16 +13,21 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aitutorial.app.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var adapter: AiTopicAdapter
+    private lateinit var heroHeaderAdapter: HeroHeaderAdapter
+    private lateinit var topicAdapter: AiTopicAdapter
 
     private var selectedCategory: String = "All"
     private var isBookmarkFilterActive = false
+
+    private val searchHandler = Handler(Looper.getMainLooper())
+    private var searchRunnable: Runnable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,7 +37,6 @@ class MainActivity : AppCompatActivity() {
         setupRecyclerView()
         setupSearch()
         setupCategoryChips()
-        setupFeaturedCard()
         setupBookmarkFilter()
         setupSyncButton()
         updateTopicsList()
@@ -43,11 +48,26 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateTopicsList()
-        setupFeaturedCard()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        searchRunnable?.let { searchHandler.removeCallbacks(it) }
     }
 
     private fun setupRecyclerView() {
-        adapter = AiTopicAdapter(
+        heroHeaderAdapter = HeroHeaderAdapter(
+            spotlightTopic = AiTopicRepository.getTrendingSpotlight(),
+            sectionTitle = "Trending AI Topics",
+            onExploreClick = { topic ->
+                val intent = Intent(this, TopicDetailActivity::class.java).apply {
+                    putExtra(TopicDetailActivity.EXTRA_TOPIC_ID, topic.id)
+                }
+                startActivity(intent)
+            }
+        )
+
+        topicAdapter = AiTopicAdapter(
             topicList = emptyList(),
             onBookmarkToggle = { topic ->
                 AiTopicRepository.toggleBookmark(topic.id)
@@ -63,7 +83,8 @@ class MainActivity : AppCompatActivity() {
 
         binding.rvTopics.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
-            adapter = this@MainActivity.adapter
+            adapter = ConcatAdapter(heroHeaderAdapter, topicAdapter)
+            setHasFixedSize(true)
         }
     }
 
@@ -71,7 +92,10 @@ class MainActivity : AppCompatActivity() {
         binding.etSearchTopics.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                updateTopicsList()
+                // Debounce search keystrokes to maintain smooth 60-120fps UI
+                searchRunnable?.let { searchHandler.removeCallbacks(it) }
+                searchRunnable = Runnable { updateTopicsList() }
+                searchHandler.postDelayed(searchRunnable!!, 150)
             }
             override fun afterTextChanged(s: Editable?) {}
         })
@@ -119,32 +143,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupFeaturedCard() {
-        val featuredTopic = AiTopicRepository.getTrendingSpotlight()
-        if (featuredTopic != null) {
-            binding.tvHeroTitle.text = featuredTopic.title
-            binding.tvHeroSummary.text = featuredTopic.shortSummary
-
-            if (featuredTopic.isLiveFeed) {
-                binding.tvHeroBadge.text = "🔥 LIVE TRENDING SPOTLIGHT"
-                binding.tvHeroBadge.setTextColor(Color.parseColor("#F43F5E"))
-                binding.tvHeroSource.visibility = View.VISIBLE
-                binding.tvHeroSource.text = "Source: ${featuredTopic.sourceName} • ${featuredTopic.category}"
-            } else {
-                binding.tvHeroBadge.text = "TOP TRENDING SPOTLIGHT"
-                binding.tvHeroBadge.setTextColor(Color.parseColor("#FBBF24"))
-                binding.tvHeroSource.visibility = View.GONE
-            }
-
-            binding.btnHeroExplore.setOnClickListener {
-                val intent = Intent(this, TopicDetailActivity::class.java).apply {
-                    putExtra(TopicDetailActivity.EXTRA_TOPIC_ID, featuredTopic.id)
-                }
-                startActivity(intent)
-            }
-        }
-    }
-
     private fun setupBookmarkFilter() {
         binding.btnFilterBookmarked.setOnClickListener {
             isBookmarkFilterActive = !isBookmarkFilterActive
@@ -183,7 +181,6 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread {
                 if (success && count > 0) {
                     binding.tvSubtitle.text = "● Live AI Feeds: Up to date ($count stories)"
-                    setupFeaturedCard()
                     updateTopicsList()
                     if (isUserInitiated) {
                         Toast.makeText(this@MainActivity, "Updated with $count live trending AI topics!", Toast.LENGTH_SHORT).show()
@@ -199,14 +196,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateTopicsList() {
-        val query = binding.etSearchTopics.text.toString().trim()
+        val query = binding.etSearchTopics.text?.toString()?.trim() ?: ""
         var filtered = AiTopicRepository.filterTopics(selectedCategory, query)
 
         if (isBookmarkFilterActive) {
             filtered = filtered.filter { it.isBookmarked }
         }
 
-        adapter.updateList(filtered)
+        val spotlightTopic = if (query.isEmpty() && !isBookmarkFilterActive && selectedCategory == "All") {
+            AiTopicRepository.getTrendingSpotlight()
+        } else {
+            null
+        }
+
+        val headerText = when {
+            isBookmarkFilterActive -> "Bookmarked Topics (${filtered.size})"
+            selectedCategory == "Live Feeds" -> "Latest AI Feeds (${filtered.size})"
+            selectedCategory != "All" -> "$selectedCategory Topics (${filtered.size})"
+            else -> "Trending AI Topics (${filtered.size})"
+        }
+
+        heroHeaderAdapter.update(spotlightTopic, headerText)
+        topicAdapter.updateList(filtered)
 
         // Empty state vs RecyclerView
         if (filtered.isEmpty()) {
@@ -215,13 +226,6 @@ class MainActivity : AppCompatActivity() {
         } else {
             binding.layoutEmptyState.visibility = View.GONE
             binding.rvTopics.visibility = View.VISIBLE
-        }
-
-        binding.tvSectionHeader.text = when {
-            isBookmarkFilterActive -> "Bookmarked Topics (${filtered.size})"
-            selectedCategory == "Live Feeds" -> "Latest AI Feeds (${filtered.size})"
-            selectedCategory != "All" -> "$selectedCategory Topics (${filtered.size})"
-            else -> "Trending AI Topics (${filtered.size})"
         }
 
         updateProgressUI()

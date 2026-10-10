@@ -345,154 +345,57 @@
 
     </LinearLayout>
 
-    <!-- Scrollable Topics Content -->
-    <androidx.core.widget.NestedScrollView
+    <!-- Topics Content Container -->
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fillViewport="true">
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
-        <LinearLayout
+        <!-- Topics RecyclerView (Recycled, Smooth 60-120fps) -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvTopics"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
             android:paddingStart="16dp"
             android:paddingTop="8dp"
             android:paddingEnd="16dp"
-            android:paddingBottom="32dp">
+            android:paddingBottom="32dp" />
 
-            <!-- Featured Hero Card -->
-            <LinearLayout
-                android:id="@+id/cardHeroFeatured"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:background="@drawable/bg_hero_card"
-                android:orientation="vertical"
-                android:padding="16dp">
+        <!-- Empty Search State -->
+        <LinearLayout
+            android:id="@+id/layoutEmptyState"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="40dp"
+            android:visibility="gone">
 
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
+            <ImageView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:alpha="0.4"
+                android:src="@drawable/ic_search" />
 
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:src="@drawable/ic_sparkles" />
-
-                    <TextView
-                        android:id="@+id/tvHeroBadge"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="6dp"
-                        android:text="TOP TRENDING SPOTLIGHT"
-                        android:textColor="#FBBF24"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/tvHeroTitle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Retrieval-Augmented Generation (RAG)"
-                    android:textColor="@color/text_primary"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvHeroSummary"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:ellipsize="end"
-                    android:maxLines="2"
-                    android:text="The most popular AI pattern for grounding LLMs with real-time enterprise documents &amp; vector databases."
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp" />
-
-                <TextView
-                    android:id="@+id/tvHeroSource"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="Source: ArXiv AI Research"
-                    android:textColor="#06B6D4"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    android:visibility="gone"
-                    tools:visibility="visible" />
-
-                <Button
-                    android:id="@+id/btnHeroExplore"
-                    style="?android:attr/borderlessButtonStyle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:layout_marginTop="10dp"
-                    android:backgroundTint="@color/primary"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:text="Explore Deep Dive →"
-                    android:textColor="@color/white"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <!-- Topics List Header -->
             <TextView
-                android:id="@+id/tvSectionHeader"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="10dp"
-                android:text="@string/label_trending"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp"
+                android:layout_marginTop="12dp"
+                android:text="No AI topics match your search"
+                android:textColor="@color/text_secondary"
+                android:textSize="15sp"
                 android:textStyle="bold" />
 
-            <!-- Topics RecyclerView -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvTopics"
-                android:layout_width="match_parent"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false" />
-
-            <!-- Empty Search State -->
-            <LinearLayout
-                android:id="@+id/layoutEmptyState"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:padding="40dp"
-                android:visibility="gone">
-
-                <ImageView
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:alpha="0.4"
-                    android:src="@drawable/ic_search" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="No AI topics match your search"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Try searching for RAG, Agents, LLM, or Transformers"
-                    android:textColor="@color/text_muted"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
+                android:layout_marginTop="4dp"
+                android:text="Try searching for RAG, Agents, LLM, or Transformers"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp" />
         </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
+
+    </FrameLayout>
 
 </LinearLayout>

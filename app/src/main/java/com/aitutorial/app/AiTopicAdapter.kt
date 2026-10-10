@@ -1,24 +1,39 @@
 package com.aitutorial.app
 
-import android.content.Context
-import android.content.Intent
 import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.aitutorial.app.databinding.ItemAiTopicBinding
 
 class AiTopicAdapter(
-    private var topicList: List<AiTopic>,
+    private var topicList: List<AiTopic> = emptyList(),
     private val onBookmarkToggle: (AiTopic) -> Unit,
     private val onItemClick: (AiTopic) -> Unit
 ) : RecyclerView.Adapter<AiTopicAdapter.TopicViewHolder>() {
 
     fun updateList(newList: List<AiTopic>) {
+        val diffCallback = object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = topicList.size
+            override fun getNewListSize(): Int = newList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                return topicList[oldItemPosition].id == newList[newItemPosition].id
+            }
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                val old = topicList[oldItemPosition]
+                val new = newList[newItemPosition]
+                return old.isBookmarked == new.isBookmarked &&
+                        old.isCompleted == new.isCompleted &&
+                        old.title == new.title &&
+                        old.shortSummary == new.shortSummary &&
+                        old.sourceName == new.sourceName
+            }
+        }
+        val diffResult = DiffUtil.calculateDiff(diffCallback)
         topicList = newList
-        notifyDataSetChanged()
+        diffResult.dispatchUpdatesTo(this)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TopicViewHolder {
@@ -40,8 +55,6 @@ class AiTopicAdapter(
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(topic: AiTopic) {
-            val context = binding.root.context
-
             binding.tvTopicTitle.text = topic.title
             binding.tvTopicSummary.text = topic.shortSummary
             binding.tvTopicCategory.text = topic.category
@@ -103,7 +116,11 @@ class AiTopicAdapter(
 
             binding.btnBookmark.setOnClickListener {
                 onBookmarkToggle(topic)
-                bind(topic)
+                if (topic.isBookmarked) {
+                    binding.btnBookmark.setImageResource(R.drawable.ic_bookmark_filled)
+                } else {
+                    binding.btnBookmark.setImageResource(R.drawable.ic_bookmark)
+                }
             }
 
             binding.root.setOnClickListener {
