@@ -42,30 +42,27 @@ class AiTopicRepositoryTest {
     }
 
     @Test
-    fun testFeedParsingAndConversion() {
-        val sampleEndpoint = AiFeedService.FeedEndpoint(
-            url = "https://rss.arxiv.org/rss/cs.AI",
-            sourceName = "ArXiv AI Research",
-            feedTag = "ArXiv AI"
-        )
+    fun testDateParsing() {
+        val parsedTime = AiFeedService.parseDate("Fri, 09 Oct 2026 12:00:00 GMT")
+        assertTrue(parsedTime > 0)
+    }
 
-        val rawTitle = "Hierarchical Multi-Agent Reinforcement Learning for Autonomous Drone Swarms"
-        val rawDesc = "Abstract: We propose an autonomous agentic framework combining LLM reasoning with tool calling and decentralized planning to coordinate drone fleets in complex environments."
-        val rawLink = "https://arxiv.org/abs/2610.99999"
-        val rawDate = "Fri, 09 Oct 2026 12:00:00 GMT"
+    @Test
+    fun testWikiSlugInference() {
+        val slug = AiFeedService.inferWikiSlug("Fine-tuning Large Language Models", "Generative AI")
+        assertEquals("Large_language_model", slug)
 
-        val topic = AiFeedService.convertToAiTopic(rawTitle, rawDesc, rawLink, rawDate, sampleEndpoint)
+        val agentSlug = AiFeedService.inferWikiSlug("Autonomous Agentic Decision Loops", "AI Agents")
+        assertEquals("Intelligent_agent", agentSlug)
+    }
 
-        assertNotNull(topic)
-        topic?.let {
-            assertEquals("Hierarchical Multi-Agent Reinforcement Learning for Autonomous Drone Swarms", it.title)
-            assertEquals("AI Agents", it.category)
-            assertEquals("Advanced", it.difficulty)
-            assertEquals("ArXiv AI Research", it.sourceName)
-            assertEquals(true, it.isLiveFeed)
-            assertTrue(it.coreConcepts.isNotEmpty())
-            assertTrue(it.tutorialContent.contains("LIVE AI TRENDING BRIEFING"))
-        }
+    @Test
+    fun testCategoryInference() {
+        val agentCategory = AiFeedService.inferCategory("Autonomous Agent Swarms with Tool Calling", "Multi-agent coordination")
+        assertEquals("AI Agents", agentCategory)
+
+        val genAiCategory = AiFeedService.inferCategory("Prompt Engineering with Large Language Models", "Token generation")
+        assertEquals("Generative AI", genAiCategory)
     }
 
     @Test
@@ -79,5 +76,43 @@ class AiTopicRepositoryTest {
     fun testTrendingSpotlight() {
         val spotlight = AiTopicRepository.getTrendingSpotlight()
         assertNotNull(spotlight)
+    }
+
+    @Test
+    fun testFallbackTrendingTopicsCoverAllSources() {
+        val fallbacks = AiFeedService.getFallbackTrendingTopics()
+        assertTrue("Should have fallback topics", fallbacks.isNotEmpty())
+
+        val sources = fallbacks.map { it.feedTag }
+        assertTrue(sources.any { it.contains("Hugging Face", ignoreCase = true) })
+        assertTrue(sources.any { it.contains("Papers With Code", ignoreCase = true) })
+        assertTrue(sources.any { it.contains("GitHub Trending", ignoreCase = true) })
+        assertTrue(sources.any { it.contains("daily.dev", ignoreCase = true) })
+    }
+
+    @Test
+    fun testSourceFeedFiltering() {
+        val fallbacks = AiFeedService.getFallbackTrendingTopics()
+        AiTopicRepository.addOrUpdateLiveTopics(fallbacks)
+
+        val hfTopics = AiTopicRepository.filterTopics("Hugging Face", null)
+        assertTrue(hfTopics.isNotEmpty())
+        assertTrue(hfTopics.all { it.feedTag.contains("Hugging Face", ignoreCase = true) || it.sourceName.contains("Hugging Face", ignoreCase = true) })
+
+        val pwcTopics = AiTopicRepository.filterTopics("Papers With Code", null)
+        assertTrue(pwcTopics.isNotEmpty())
+        assertTrue(pwcTopics.all { it.feedTag.contains("Papers With Code", ignoreCase = true) || it.sourceName.contains("Papers With Code", ignoreCase = true) })
+
+        val ghTopics = AiTopicRepository.filterTopics("GitHub Trending", null)
+        assertTrue(ghTopics.isNotEmpty())
+        assertTrue(ghTopics.all { it.feedTag.contains("GitHub", ignoreCase = true) || it.sourceName.contains("GitHub", ignoreCase = true) })
+
+        val dailyTopics = AiTopicRepository.filterTopics("daily.dev", null)
+        assertTrue(dailyTopics.isNotEmpty())
+        assertTrue(dailyTopics.all { it.feedTag.contains("daily.dev", ignoreCase = true) || it.sourceName.contains("daily.dev", ignoreCase = true) })
+
+        val wikiTopics = AiTopicRepository.filterTopics("Wikipedia", null)
+        assertTrue(wikiTopics.isNotEmpty())
+        assertTrue(wikiTopics.all { it.feedTag.contains("Wikipedia", ignoreCase = true) || it.sourceName.contains("Wikipedia", ignoreCase = true) || !it.isLiveFeed })
     }
 }

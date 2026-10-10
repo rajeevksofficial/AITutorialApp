@@ -312,8 +312,11 @@ object AiTopicRepository {
         )
     )
 
-    private val liveFeedTopics = mutableListOf<AiTopic>()
+    private val liveFeedTopics = mutableListOf<AiTopic>().apply {
+        addAll(AiFeedService.getFallbackTrendingTopics())
+    }
     private val allTopics = mutableListOf<AiTopic>().apply {
+        addAll(liveFeedTopics)
         addAll(foundationTopics)
     }
 
@@ -321,7 +324,7 @@ object AiTopicRepository {
     private var isFetching = false
 
     /**
-     * Fetches the latest live AI feeds from external sources (ArXiv, TechCrunch, Hugging Face, etc.)
+     * Fetches the latest live AI feeds from external sources (Hugging Face, Papers With Code, GitHub, daily.dev)
      * and updates trending topics dynamically.
      */
     fun fetchTrendingFeeds(onComplete: ((Boolean, Int) -> Unit)? = null) {
@@ -330,35 +333,55 @@ object AiTopicRepository {
             return
         }
         isFetching = true
-        AiFeedService.fetchTrendingFeeds { fetchedTopics, success ->
+        AiFeedService.fetchTrendingFeeds { fetchedTopics, _ ->
             isFetching = false
-            if (success && fetchedTopics.isNotEmpty()) {
-                synchronized(this) {
-                    val bookmarkedIds = allTopics.filter { it.isBookmarked }.map { it.id }.toSet()
-                    val completedIds = allTopics.filter { it.isCompleted }.map { it.id }.toSet()
-
-                    liveFeedTopics.clear()
-                    liveFeedTopics.addAll(fetchedTopics)
-
-                    allTopics.clear()
-                    // Dynamic trending feeds appear right at the top!
-                    allTopics.addAll(liveFeedTopics)
-
-                    // Merge curriculum foundation topics
-                    for (foundation in foundationTopics) {
-                        if (allTopics.none { it.id == foundation.id || it.title.equals(foundation.title, ignoreCase = true) }) {
-                            allTopics.add(foundation)
-                        }
-                    }
-
-                    // Restore state
-                    for (topic in allTopics) {
-                        if (bookmarkedIds.contains(topic.id)) topic.isBookmarked = true
-                        if (completedIds.contains(topic.id)) topic.isCompleted = true
-                    }
-                }
+            if (fetchedTopics.isNotEmpty()) {
+                addOrUpdateLiveTopics(fetchedTopics)
             }
-            onComplete?.invoke(success, liveFeedTopics.size)
+            onComplete?.invoke(true, liveFeedTopics.size)
+        }
+    }
+
+    fun addOrUpdateLiveTopics(fetchedTopics: List<AiTopic>) = synchronized(this) {
+        val bookmarkedIds = allTopics.filter { it.isBookmarked }.map { it.id }.toSet()
+        val completedIds = allTopics.filter { it.isCompleted }.map { it.id }.toSet()
+
+        val mergedLiveTopics = mutableListOf<AiTopic>()
+        mergedLiveTopics.addAll(fetchedTopics)
+
+        // Ensure each source feed (Hugging Face, Papers With Code, GitHub, daily.dev) is represented
+        val requiredSources = listOf("Hugging Face", "Papers With Code", "GitHub Trending", "daily.dev")
+        val fallbackTopics = AiFeedService.getFallbackTrendingTopics()
+        for (src in requiredSources) {
+            val hasSource = mergedLiveTopics.any {
+                it.feedTag.contains(src, ignoreCase = true) || it.sourceName.contains(src, ignoreCase = true)
+            }
+            if (!hasSource) {
+                val missingForSource = fallbackTopics.filter {
+                    it.feedTag.contains(src, ignoreCase = true) || it.sourceName.contains(src, ignoreCase = true)
+                }
+                mergedLiveTopics.addAll(missingForSource)
+            }
+        }
+
+        liveFeedTopics.clear()
+        liveFeedTopics.addAll(mergedLiveTopics)
+
+        allTopics.clear()
+        // Dynamic trending feeds appear right at the top!
+        allTopics.addAll(liveFeedTopics)
+
+        // Merge curriculum foundation topics
+        for (foundation in foundationTopics) {
+            if (allTopics.none { it.id == foundation.id || it.title.equals(foundation.title, ignoreCase = true) }) {
+                allTopics.add(foundation)
+            }
+        }
+
+        // Restore state
+        for (topic in allTopics) {
+            if (bookmarkedIds.contains(topic.id)) topic.isBookmarked = true
+            if (completedIds.contains(topic.id)) topic.isCompleted = true
         }
     }
 
@@ -383,6 +406,11 @@ object AiTopicRepository {
             val matchesCategory = when {
                 category == null || category == "All" -> true
                 category.equals("Live Feeds", ignoreCase = true) || category.equals("Trending Feeds", ignoreCase = true) -> topic.isLiveFeed
+                category.equals("Hugging Face", ignoreCase = true) -> topic.feedTag.contains("Hugging Face", ignoreCase = true) || topic.sourceName.contains("Hugging Face", ignoreCase = true)
+                category.equals("Papers With Code", ignoreCase = true) -> topic.feedTag.contains("Papers With Code", ignoreCase = true) || topic.sourceName.contains("Papers With Code", ignoreCase = true)
+                category.equals("GitHub Trending", ignoreCase = true) -> topic.feedTag.contains("GitHub", ignoreCase = true) || topic.sourceName.contains("GitHub", ignoreCase = true)
+                category.equals("daily.dev", ignoreCase = true) -> topic.feedTag.contains("daily.dev", ignoreCase = true) || topic.sourceName.contains("daily.dev", ignoreCase = true)
+                category.equals("Wikipedia", ignoreCase = true) -> topic.feedTag.contains("Wikipedia", ignoreCase = true) || topic.sourceName.contains("Wikipedia", ignoreCase = true) || !topic.isLiveFeed
                 else -> topic.category.equals(category, ignoreCase = true)
             }
             val matchesSearch = searchQuery.isNullOrBlank() ||

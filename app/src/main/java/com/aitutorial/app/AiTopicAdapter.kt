@@ -59,25 +59,37 @@ class AiTopicAdapter(
             // Completed Status Icon
             binding.ivCompletedStatus.visibility = if (topic.isCompleted) View.VISIBLE else View.GONE
 
-            // Live Feed Indicator
+            // Feed Source Indicator & Badging
             if (topic.isLiveFeed) {
                 binding.tvLiveBadge.visibility = View.VISIBLE
-                binding.tvLiveBadge.text = "● LIVE ${topic.feedTag.uppercase()}"
                 binding.tvTopicSource.text = topic.sourceName
                 binding.ivTopicSourceIcon.setImageResource(R.drawable.ic_sparkles)
 
-                val sourceColor = when {
-                    topic.sourceName.contains("ArXiv") -> Color.parseColor("#F43F5E")
-                    topic.sourceName.contains("TechCrunch") -> Color.parseColor("#10B981")
-                    topic.sourceName.contains("Hugging Face") -> Color.parseColor("#F59E0B")
-                    topic.sourceName.contains("Google") -> Color.parseColor("#3B82F6")
-                    topic.sourceName.contains("Hacker News") -> Color.parseColor("#FB923C")
-                    else -> Color.parseColor("#06B6D4")
+                val (badgeText, badgeColor, sourceColor) = when {
+                    topic.feedTag.contains("Hugging Face", true) || topic.sourceName.contains("Hugging Face", true) -> {
+                        Triple("● HUGGING FACE", "#F59E0B", "#FBBF24")
+                    }
+                    topic.feedTag.contains("Papers With Code", true) || topic.sourceName.contains("Papers With Code", true) -> {
+                        Triple("● PAPERS WITH CODE", "#0284C7", "#38BDF8")
+                    }
+                    topic.feedTag.contains("GitHub", true) || topic.sourceName.contains("GitHub", true) -> {
+                        Triple("● GITHUB TRENDING", "#A855F7", "#C084FC")
+                    }
+                    topic.feedTag.contains("daily.dev", true) || topic.sourceName.contains("daily.dev", true) -> {
+                        Triple("● DAILY.DEV #AI", "#EC4899", "#F472B6")
+                    }
+                    else -> {
+                        Triple("● LIVE FEED", "#06B6D4", "#22D3EE")
+                    }
                 }
-                binding.tvTopicSource.setTextColor(sourceColor)
+                binding.tvLiveBadge.text = badgeText
+                binding.tvLiveBadge.setTextColor(Color.parseColor(badgeColor))
+                binding.tvTopicSource.setTextColor(Color.parseColor(sourceColor))
             } else {
-                binding.tvLiveBadge.visibility = View.GONE
-                binding.tvTopicSource.text = topic.sourceName
+                binding.tvLiveBadge.visibility = View.VISIBLE
+                binding.tvLiveBadge.text = "● WIKIPEDIA CORE"
+                binding.tvLiveBadge.setTextColor(Color.parseColor("#818CF8"))
+                binding.tvTopicSource.text = "Wikipedia & Web Docs"
                 binding.tvTopicSource.setTextColor(Color.parseColor("#818CF8"))
                 binding.ivTopicSourceIcon.setImageResource(R.drawable.ic_web)
             }

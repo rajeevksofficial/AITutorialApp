@@ -81,6 +81,11 @@ class MainActivity : AppCompatActivity() {
         val chipMap = mapOf(
             binding.chipAll to "All",
             binding.chipLiveFeeds to "Live Feeds",
+            binding.chipHuggingFace to "Hugging Face",
+            binding.chipPapersWithCode to "Papers With Code",
+            binding.chipGitHub to "GitHub Trending",
+            binding.chipDailyDev to "daily.dev",
+            binding.chipWikipedia to "Wikipedia",
             binding.chipGenAi to "Generative AI",
             binding.chipAgents to "AI Agents",
             binding.chipDeepLearning to "Deep Learning",
@@ -169,10 +174,10 @@ class MainActivity : AppCompatActivity() {
                 repeatCount = 1
             }
             binding.btnRefreshFeeds.startAnimation(rotate)
-            Toast.makeText(this, "Fetching latest feeds from ArXiv, TechCrunch, Hugging Face...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Fetching latest feeds from Hugging Face, Papers With Code, GitHub & daily.dev...", Toast.LENGTH_SHORT).show()
         }
 
-        binding.tvSubtitle.text = "Syncing live feeds from ArXiv, TechCrunch & HF..."
+        binding.tvSubtitle.text = "Syncing feeds from Hugging Face, Papers With Code, GitHub & daily.dev..."
 
         AiTopicRepository.fetchTrendingFeeds { success, count ->
             runOnUiThread {
@@ -215,6 +220,7 @@ class MainActivity : AppCompatActivity() {
         binding.tvSectionHeader.text = when {
             isBookmarkFilterActive -> "Bookmarked Topics (${filtered.size})"
             selectedCategory == "Live Feeds" -> "Latest AI Feeds (${filtered.size})"
+            selectedCategory != "All" -> "$selectedCategory Topics (${filtered.size})"
             else -> "Trending AI Topics (${filtered.size})"
         }
 
